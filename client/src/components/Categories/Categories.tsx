@@ -223,6 +223,7 @@ export default function Categories() {
           <p className="text-gray-500 text-sm mt-1">Organize your income and expenses</p>
         </div>
         <Button
+        className="text-black bg-gray-300"
           onClick={() => {
             resetForm();
             setEditingCategory(null);

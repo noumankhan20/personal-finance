@@ -319,14 +319,14 @@ export default function BankUpload() {
                                 <select
                                     value={selectedAccount}
                                     onChange={(e) => setSelectedAccount(e.target.value)}
-                                    className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+                                    className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-black"
                                 >
                                     {bankAccounts.map((account) => (
                                         <option key={account.id} value={account.id}>{account.name}</option>
                                     ))}
                                 </select>
                             </div>
-                            <Button variant="outline" size="sm" className="mt-6">
+                            <Button variant="outline" size="sm" className="mt-6 text-black">
                                 <Plus size={14} className="mr-1" />Add Bank
                             </Button>
                         </div>
