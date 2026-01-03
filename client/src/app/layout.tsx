@@ -23,7 +23,7 @@ export default function RootLayout({
   const pathname = usePathname();
 
   // Check if the current path is not the login page
-  const showSidebar = pathname !== "/login"; // Exclude sidebar on /login route
+  const showSidebar = pathname !== "/"; // Exclude sidebar on /login route
 
   return (
     <html lang="en">
