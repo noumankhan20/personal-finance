@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar as CalendarIcon, Download, TrendingUp, TrendingDown, PieChart, BarChart3 } from "lucide-react";
 import { PieChart as RePieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import type { PieLabelRenderProps } from "recharts";
 
 const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat("en-IN", {
@@ -57,6 +58,7 @@ interface IncomeExpense {
 interface ChartData {
     name: string;
     value: number;
+    [key: string]: any;
 }
 
 interface ComparisonData {
@@ -346,14 +348,19 @@ export default function Reports() {
                                                 outerRadius={80}
                                                 fill="#22c55e"
                                                 dataKey="value"
-                                                label={({ name, percent }: { name: string; percent: number }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                                label={(props: PieLabelRenderProps) => {
+                                                    const name = props.name ?? "";
+                                                    const percent = props.percent ?? 0;
+                                                    return `${name} (${(percent * 100).toFixed(0)}%)`;
+                                                }}
+
                                                 labelLine={false}
                                             >
                                                 {incomeChartData.map((entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
-                                            <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                                           <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                                         </RePieChart>
                                     </ResponsiveContainer>
                                 ) : (
@@ -377,14 +384,19 @@ export default function Reports() {
                                                 outerRadius={80}
                                                 fill="#ef4444"
                                                 dataKey="value"
-                                                label={({ name, percent }: { name: string; percent: number }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                                label={(props: PieLabelRenderProps) => {
+                                                    const name = props.name ?? "";
+                                                    const percent = props.percent ?? 0;
+                                                    return `${name} (${(percent * 100).toFixed(0)}%)`;
+                                                }}
                                                 labelLine={false}
                                             >
                                                 {expenseChartData.map((entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
-                                            <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                                            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+
                                         </RePieChart>
                                     </ResponsiveContainer>
                                 ) : (
@@ -407,7 +419,7 @@ export default function Reports() {
                                         stroke="#6b7280"
                                         tickFormatter={(val: number) => `₹${(val / 1000).toFixed(0)}K`}
                                     />
-                                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                                     <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
                                         <Cell fill="#22c55e" />
                                         <Cell fill="#ef4444" />

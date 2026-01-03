@@ -14,7 +14,7 @@ import {
   HandCoins,
   FileText,
   Settings,
-  LogOut,
+  LogOutIcon,
 } from 'lucide-react';
 
 interface NavItemProps {
@@ -53,6 +53,7 @@ export default function Sidebar() {
     { href: '/loans', icon: <HandCoins />, label: 'Loans' },
     { href: '/reports', icon: <FileText />, label: 'Reports' },
     { href: '/settings', icon: <Settings />, label: 'Settings' },
+    { href: '/logout', icon: <LogOutIcon />, label: 'Logout' },
   ];
 
   return (
@@ -79,7 +80,7 @@ export default function Sidebar() {
       {/* Logout */}
       <div className="p-4 border-t border-gray-200">
         <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all w-full">
-          <LogOut className="w-5 h-5" />
+          <LogOutIcon className="w-5 h-5" />
           <span className="text-sm">Logout</span>
         </button>
       </div>
