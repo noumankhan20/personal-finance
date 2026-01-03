@@ -32,6 +32,7 @@ export const apiSlice = createApi({
   baseQuery: baseQueryWithAutoLogout,
   tagTypes: [
     'Account',
+    'Category',
   ],
   endpoints: () => ({}),
 })

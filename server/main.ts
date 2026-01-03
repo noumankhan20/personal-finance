@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors';
 import { prisma } from './config/db.config';
 import acccountsRoutes from './routes/accounts.routes';
+import categoriesRoutes from './routes/categories.routes';
 dotenv.config()
 
 const app = express()
@@ -25,7 +26,7 @@ app.use(express.urlencoded({ extended: true }))
 
 
 app.use("/api/accounts",acccountsRoutes)
-
+app.use("/api/categories",categoriesRoutes)
 
 // Sample route
 app.get('/', (req, res) => {
