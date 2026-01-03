@@ -132,11 +132,11 @@ export default function Categories() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as CategoryType)}>
         <TabsList className="grid grid-cols-2 w-64">
-          <TabsTrigger value="expense" className="flex items-center gap-2">
+          <TabsTrigger value="expense" className="flex items-center gap-2 text-black">
             <TrendingDown size={14} />
             Expenses
           </TabsTrigger>
-          <TabsTrigger value="income" className="flex items-center gap-2">
+          <TabsTrigger value="income" className="flex items-center gap-2 text-black">
             <TrendingUp size={14} />
             Income
           </TabsTrigger>
@@ -203,10 +203,10 @@ export default function Categories() {
                   setFormData({ ...formData, parentId: val === "none" ? "" : val })
                 }
               >
-                <SelectTrigger className="mt-2 bg-white border-gray-300" data-testid="parent-category-select">
+                <SelectTrigger className="mt-2 bg-white text-black border-gray-300" data-testid="parent-category-select">
                   <SelectValue placeholder="No parent (top-level)" />
                 </SelectTrigger>
-                <SelectContent className="bg-white">
+                <SelectContent className="bg-white text-black">
                   <SelectItem value="none">No parent (top-level)</SelectItem>
                   {parentCategories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
