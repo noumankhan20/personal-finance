@@ -18,6 +18,46 @@ model User{
    email     String   @unique
    password  String
    phoneNo   String?
-   fullName  String?
-   
+   fullName  String?  
+}
+
+
+enum AccountType {
+  bank
+  cash
+  credit_card
+  investment
+}
+
+enum TransactionType {
+  income
+  expense
+  transfer
+}
+
+model Account {
+  id              String        @id @default(uuid())
+  accountname     String
+  accountType     AccountType
+  description     String?
+  openingBalance  Decimal       @db.Decimal(14, 2)
+  currentBalance  Decimal?       @db.Decimal(14, 2)
+
+  transactions    Transaction[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Transaction {
+  id              String           @id @default(uuid())
+  accountId       String
+  account         Account          @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  description     String
+  amount          Decimal          @db.Decimal(14, 2)
+  transactionType TransactionType
+  date            DateTime
+
+  createdAt       DateTime         @default(now())
 }

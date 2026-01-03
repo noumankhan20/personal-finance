@@ -2,18 +2,30 @@ import express from 'express'
 import dotenv from 'dotenv'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
+import cors from 'cors';
 import { prisma } from './config/db.config';
-
+import acccountsRoutes from './routes/accounts.routes';
 dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 5000
+  app.use(
+  cors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+  })
+)
 
 // Middleware
 app.use(morgan('dev'))
 app.use(cookieParser())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+
+
+
+app.use("/api/accounts",acccountsRoutes)
+
 
 // Sample route
 app.get('/', (req, res) => {

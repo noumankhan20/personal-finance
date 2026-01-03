@@ -1,15 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import {
+  useGetAccountsQuery,
+  useCreateAccountMutation,
+  useUpdateAccountMutation,
+  useDeleteAccountMutation,
+} from "@/redux/slices/accountsSlice";
 
 // Types
 interface Account {
   id: string;
-  name: string;
-  account_type: string;
-  description: string;
-  opening_balance: number;
-  current_balance: number;
+  accountname: string;
+  accountType: string;
+  description: string | null;
+  openingBalance: number;
+  currentBalance: number;
+  createdAt: string;
+  updatedAt: string;
   person_name?: string;
 }
 
@@ -22,10 +30,10 @@ interface Transaction {
 }
 
 interface FormData {
-  name: string;
-  account_type: string;
+  accountname: string;
+  accountType: string;
   description: string;
-  opening_balance: number | string;
+  openingBalance: number | string;
   person_name: string;
 }
 
@@ -41,59 +49,6 @@ const ACCOUNT_TYPES: AccountType[] = [
   { value: "cash", label: "Cash", color: "text-emerald-600", bg: "bg-emerald-50" },
   { value: "credit_card", label: "Credit Card", color: "text-rose-600", bg: "bg-rose-50" },
   { value: "investment", label: "Investment", color: "text-purple-600", bg: "bg-purple-50" },
-  { value: "loan_receivable", label: "Loan Receivable", color: "text-amber-600", bg: "bg-amber-50" },
-  { value: "loan_payable", label: "Loan Payable", color: "text-red-600", bg: "bg-red-50" },
-];
-
-// Mock data
-const mockAccounts: Account[] = [
-  {
-    id: "1",
-    name: "HDFC Bank",
-    account_type: "bank",
-    description: "Salary account",
-    opening_balance: 50000,
-    current_balance: 75000,
-  },
-  {
-    id: "2",
-    name: "Cash Wallet",
-    account_type: "cash",
-    description: "Daily expenses",
-    opening_balance: 5000,
-    current_balance: 3500,
-  },
-  {
-    id: "3",
-    name: "ICICI Credit Card",
-    account_type: "credit_card",
-    description: "Main credit card",
-    opening_balance: -25000,
-    current_balance: -18000,
-  },
-  {
-    id: "4",
-    name: "Stocks Portfolio",
-    account_type: "investment",
-    description: "Long term investments",
-    opening_balance: 100000,
-    current_balance: 125000,
-  },
-  {
-    id: "5",
-    name: "Loan to Rahul",
-    account_type: "loan_receivable",
-    description: "Personal loan",
-    opening_balance: 50000,
-    current_balance: 30000,
-    person_name: "Rahul",
-  },
-];
-
-const mockTransactions: Transaction[] = [
-  { id: "1", description: "Salary Credit", date: "2026-01-01", amount: 50000, transaction_type: "income" },
-  { id: "2", description: "Grocery Shopping", date: "2025-12-30", amount: 2500, transaction_type: "expense" },
-  { id: "3", description: "Electricity Bill", date: "2025-12-28", amount: 1200, transaction_type: "expense" },
 ];
 
 const formatCurrency = (amount: number) => {
@@ -117,9 +72,11 @@ const getAccountIcon = (type: string) => {
 };
 
 export default function Accounts() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const { data: accountsData, isLoading, error } = useGetAccountsQuery();
+  const [createAccount] = useCreateAccountMutation();
+  const [updateAccount] = useUpdateAccountMutation();
+  const [deleteAccount] = useDeleteAccountMutation();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [filterType, setFilterType] = useState("all");
@@ -127,88 +84,81 @@ export default function Accounts() {
   const [showAccountSheet, setShowAccountSheet] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
-    name: "",
-    account_type: "bank",
+    accountname: "",
+    accountType: "bank",
     description: "",
-    opening_balance: 0,
+    openingBalance: 0,
     person_name: "",
   });
 
-  useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setAccounts(mockAccounts);
-      setLoading(false);
-    }, 500);
-  }, []);
+  const accounts = accountsData || [];
 
   const handleAccountClick = (account: Account) => {
     setSelectedAccount(account);
     setShowAccountSheet(true);
-    setTransactions(mockTransactions);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (editingAccount) {
-      // Update existing account
-      const updatedAccounts = accounts.map((acc) =>
-        acc.id === editingAccount.id
-          ? {
-              ...acc,
-              ...formData,
-              opening_balance: Number(formData.opening_balance),
-              current_balance: Number(formData.opening_balance),
-            }
-          : acc
-      );
-      setAccounts(updatedAccounts);
-      alert("Account updated successfully!");
-    } else {
-      // Create new account
-      const newAccount: Account = {
-        id: Date.now().toString(),
-        ...formData,
-        opening_balance: Number(formData.opening_balance),
-        current_balance: Number(formData.opening_balance),
-      };
-      setAccounts([...accounts, newAccount]);
-      alert("Account created successfully!");
-    }
+  const handleSubmit = async () => {
+    try {
+      if (editingAccount) {
+        await updateAccount({
+          id: editingAccount.id,
+          accountname: formData.accountname,
+          accountType: formData.accountType as any,
+          description: formData.description || undefined,
+        }).unwrap();
+        alert("Account updated successfully!");
+      } else {
+        await createAccount({
+          accountname: formData.accountname,
+          accountType: formData.accountType as any,
+          openingBalance: Number(formData.openingBalance),
+          description: formData.description || undefined,
+        }).unwrap();
+        alert("Account created successfully!");
+      }
 
-    setShowDialog(false);
-    setEditingAccount(null);
-    resetForm();
+      setShowDialog(false);
+      setEditingAccount(null);
+      resetForm();
+    } catch (err) {
+      alert("Failed to save account. Please try again.");
+      console.error("Error saving account:", err);
+    }
   };
 
   const handleEdit = (e: React.MouseEvent, account: Account) => {
     e.stopPropagation();
     setEditingAccount(account);
     setFormData({
-      name: account.name,
-      account_type: account.account_type,
-      description: account.description,
-      opening_balance: account.opening_balance,
+      accountname: account.accountname,
+      accountType: account.accountType,
+      description: account.description || "",
+      openingBalance: account.openingBalance,
       person_name: account.person_name || "",
     });
     setShowDialog(true);
   };
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (confirm("Delete this account? This cannot be undone.")) {
-      setAccounts(accounts.filter((acc) => acc.id !== id));
-      alert("Account deleted successfully!");
+      try {
+        await deleteAccount(id).unwrap();
+        alert("Account deleted successfully!");
+      } catch (err) {
+        alert("Failed to delete account. Please try again.");
+        console.error("Error deleting account:", err);
+      }
     }
   };
 
   const resetForm = () => {
     setFormData({
-      name: "",
-      account_type: "bank",
+      accountname: "",
+      accountType: "bank",
       description: "",
-      opening_balance: 0,
+      openingBalance: 0,
       person_name: "",
     });
   };
@@ -217,28 +167,26 @@ export default function Accounts() {
     ACCOUNT_TYPES.find((t) => t.value === type) || ACCOUNT_TYPES[0];
 
   const filteredAccounts =
-    filterType === "all" ? accounts : accounts.filter((a) => a.account_type === filterType);
+    filterType === "all" ? accounts : accounts.filter((a) => a.accountType === filterType);
 
   const groupedAccounts = filteredAccounts.reduce((acc, account) => {
-    const type = account.account_type;
+    const type = account.accountType;
     if (!acc[type]) acc[type] = [];
     acc[type].push(account);
     return acc;
   }, {} as { [key: string]: Account[] });
 
-  // Calculate totals
   const totals = {
     assets: accounts
-      .filter((a) => ["bank", "cash", "investment", "loan_receivable"].includes(a.account_type))
-      .reduce((sum, a) => sum + a.current_balance, 0),
+      .filter((a) => ["bank", "cash", "investment", "loan_receivable"].includes(a.accountType))
+      .reduce((sum, a) => sum + a.currentBalance, 0),
     liabilities: accounts
-      .filter((a) => ["credit_card", "loan_payable"].includes(a.account_type))
-      .reduce((sum, a) => sum + Math.abs(a.current_balance), 0),
+      .filter((a) => ["credit_card", "loan_payable"].includes(a.accountType))
+      .reduce((sum, a) => sum + Math.abs(a.currentBalance), 0),
   };
 
   return (
     <div className="space-y-6 p-4 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Accounts</h1>
@@ -259,7 +207,6 @@ export default function Accounts() {
         </button>
       </div>
 
-      {/* Summary */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-500">Total Assets</p>
@@ -271,7 +218,6 @@ export default function Accounts() {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="flex gap-2 flex-wrap">
         <button
           onClick={() => setFilterType("all")}
@@ -298,9 +244,10 @@ export default function Accounts() {
         ))}
       </div>
 
-      {/* Accounts Grid */}
-      {loading ? (
+      {isLoading ? (
         <div className="text-center py-8 text-gray-500">Loading...</div>
+      ) : error ? (
+        <div className="text-center py-8 text-red-500">Error loading accounts. Please try again.</div>
       ) : (
         <div className="space-y-6">
           {Object.entries(groupedAccounts).map(([type, typeAccounts]) => {
@@ -330,13 +277,13 @@ export default function Accounts() {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 strokeWidth={1.5}
-                                d={getAccountIcon(account.account_type)}
+                                d={getAccountIcon(account.accountType)}
                               />
                             </svg>
                           </div>
                           <div>
                             <h3 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                              {account.name}
+                              {account.accountname}
                             </h3>
                             {account.person_name && (
                               <p className="text-xs text-gray-500">{account.person_name}</p>
@@ -369,10 +316,10 @@ export default function Accounts() {
                         <p className="text-xs text-gray-500">Current Balance</p>
                         <p
                           className={`font-mono text-lg font-medium ${
-                            account.current_balance >= 0 ? "text-emerald-600" : "text-rose-600"
+                            account.currentBalance >= 0 ? "text-emerald-600" : "text-rose-600"
                           }`}
                         >
-                          {formatCurrency(account.current_balance)}
+                          {formatCurrency(account.currentBalance)}
                         </p>
                       </div>
                     </div>
@@ -396,28 +343,27 @@ export default function Accounts() {
         </div>
       )}
 
-      {/* Create/Edit Dialog */}
       {showDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 text-black">
           <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-xl font-bold">{editingAccount ? "Edit Account" : "New Account"}</h2>
               <button
                 onClick={() => setShowDialog(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className=" text-gray-400 hover:text-gray-600"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.accountname}
+                  onChange={(e) => setFormData({ ...formData, accountname: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., HDFC Savings"
                   required
@@ -427,8 +373,8 @@ export default function Accounts() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
                 <select
-                  value={formData.account_type}
-                  onChange={(e) => setFormData({ ...formData, account_type: e.target.value })}
+                  value={formData.accountType}
+                  onChange={(e) => setFormData({ ...formData, accountType: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {ACCOUNT_TYPES.map((t) => (
@@ -444,15 +390,15 @@ export default function Accounts() {
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={formData.opening_balance}
+                  value={formData.openingBalance}
                   onChange={(e) => {
                     const val = e.target.value;
                     if (val === "" || val === "-") {
-                      setFormData({ ...formData, opening_balance: val });
+                      setFormData({ ...formData, openingBalance: val });
                     } else {
                       const num = parseFloat(val);
                       if (!isNaN(num)) {
-                        setFormData({ ...formData, opening_balance: num });
+                        setFormData({ ...formData, openingBalance: num });
                       }
                     }
                   }}
@@ -462,7 +408,7 @@ export default function Accounts() {
                 <p className="text-xs text-gray-500 mt-1">Enter negative value for credit card dues</p>
               </div>
 
-              {(formData.account_type === "loan_receivable" || formData.account_type === "loan_payable") && (
+              {(formData.accountType === "loan_receivable" || formData.accountType === "loan_payable") && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Person Name</label>
                   <input
@@ -494,30 +440,30 @@ export default function Accounts() {
                   Cancel
                 </button>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleSubmit}
                   className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
                 >
                   {editingAccount ? "Update" : "Create"}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Account Detail Sheet */}
       {showAccountSheet && selectedAccount && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-end z-50">
+       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 text-black">
           <div className="bg-white w-full sm:max-w-xl h-full sm:h-auto sm:rounded-l-lg overflow-hidden flex flex-col">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <div className="flex-1">
-                <h2 className="text-xl font-bold">{selectedAccount.name}</h2>
+                <h2 className="text-xl font-bold">{selectedAccount.accountname}</h2>
                 <p
                   className={`font-mono text-lg mt-1 ${
-                    selectedAccount.current_balance >= 0 ? "text-emerald-600" : "text-rose-600"
+                    selectedAccount.currentBalance >= 0 ? "text-emerald-600" : "text-rose-600"
                   }`}
                 >
-                  {formatCurrency(selectedAccount.current_balance)}
+                  {formatCurrency(selectedAccount.currentBalance)}
                 </p>
               </div>
               <button
