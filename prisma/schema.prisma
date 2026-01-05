@@ -132,3 +132,55 @@ enum CategoryType {
   expense
   income
 }
+
+
+enum LoanType {
+  GIVEN
+  TAKEN
+}
+
+enum InterestType {
+  SIMPLE
+  COMPOUND
+}
+
+enum RepaymentType {
+  PRINCIPAL
+  INTEREST
+}
+
+model Loan {
+  id            String        @id @default(uuid())
+
+  personName    String
+  loanType      LoanType
+  principal     Decimal       @db.Decimal(14,2)
+
+  interestRate  Decimal       @db.Decimal(5,2)
+  interestType  InterestType
+
+  startDate     DateTime
+  notes         String?
+
+  repayments    LoanRepayment[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+
+model LoanRepayment {
+  id            String         @id @default(uuid())
+  loanId        String
+
+  amount        Decimal        @db.Decimal(14,2)
+  repaymentType RepaymentType
+  date          DateTime
+  notes         String?
+
+  createdAt     DateTime       @default(now())
+
+  loan          Loan           @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@index([loanId])
+}

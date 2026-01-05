@@ -20,25 +20,31 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Plus, ArrowUpRight, ArrowDownRight, User, Calculator, Edit2, Trash2, Banknote } from "lucide-react";
+import {
+  useGetLoansQuery,
+  useCreateLoanMutation,
+  useUpdateLoanMutation,
+  useDeleteLoanMutation,
+} from "@/redux/slices/loanSlice";
 
 interface Loan {
-  id: number;
-  person_name: string;
-  loan_type: "given" | "taken";
-  principal: number;
-  interest_rate: number;
-  interest_type: "simple" | "compound";
-  start_date: string;
+  id: string;
+  personName: string;
+  loanType: "GIVEN" | "TAKEN";
+  principal: number | "";
+  interestRate: number | "";
+  interestType: "SIMPLE" | "COMPOUND";
+  startDate: string;
   notes: string;
   total_repaid: number;
   interest_paid: number;
 }
 
 interface InterestData {
-  principal: number;
+  principal: number | "";
   outstanding_principal: number;
-  interest_rate: number;
-  interest_type: string;
+  interestRate: number | "";
+  interestType: string;
   days_elapsed: number;
   accrued_interest: number;
   interest_paid: number;
@@ -47,12 +53,12 @@ interface InterestData {
 }
 
 interface FormData {
-  person_name: string;
-  loan_type: "given" | "taken";
-  principal: number;
-  interest_rate: number;
-  interest_type: "simple" | "compound";
-  start_date: string;
+  personName: string;
+  loanType: "GIVEN" | "TAKEN";
+  principal: number | "";
+  interestRate: number | "";
+  interestType: "SIMPLE" | "COMPOUND";
+  startDate: string;
   notes: string;
 }
 
@@ -79,17 +85,17 @@ const formatDate = (date: Date): string => {
 };
 
 const calculateInterest = (loan: Loan): InterestData => {
-  const startDate = new Date(loan.start_date);
+  const startDate = new Date(loan.startDate);
   const today = new Date();
   const daysElapsed = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
   const outstandingPrincipal = loan.principal - loan.total_repaid;
-  
+
   let accruedInterest = 0;
-  if (loan.interest_type === "simple") {
-    accruedInterest = (outstandingPrincipal * loan.interest_rate * daysElapsed) / (365 * 100);
+  if (loan.interestType === "SIMPLE") {
+    accruedInterest = (outstandingPrincipal * loan.interestRate * daysElapsed) / (365 * 100);
   } else {
     const months = daysElapsed / 30;
-    accruedInterest = outstandingPrincipal * (Math.pow(1 + loan.interest_rate / 1200, months) - 1);
+    accruedInterest = outstandingPrincipal * (Math.pow(1 + loan.interestRate / 1200, months) - 1);
   }
 
   const interestDue = accruedInterest - loan.interest_paid;
@@ -98,8 +104,8 @@ const calculateInterest = (loan: Loan): InterestData => {
   return {
     principal: loan.principal,
     outstanding_principal: outstandingPrincipal,
-    interest_rate: loan.interest_rate,
-    interest_type: loan.interest_type,
+    interestRate: loan.interestRate,
+    interestType: loan.interestType,
     days_elapsed: daysElapsed,
     accrued_interest: accruedInterest,
     interest_paid: loan.interest_paid,
@@ -109,47 +115,25 @@ const calculateInterest = (loan: Loan): InterestData => {
 };
 
 export default function Loans() {
-  const [loans, setLoans] = useState<Loan[]>([
-    {
-      id: 1,
-      person_name: "AKash Broker",
-      loan_type: "taken",
-      principal: 100000,
-      interest_rate: 2,
-      interest_type: "simple",
-      start_date: "2025-12-31",
-      notes: "",
-      total_repaid: 0,
-      interest_paid: 0,
-    },
-    {
-      id: 2,
-      person_name: "Nikita",
-      loan_type: "taken",
-      principal: 10000,
-      interest_rate: 40,
-      interest_type: "simple",
-      start_date: "2026-01-01",
-      notes: "",
-      total_repaid: 0,
-      interest_paid: 0,
-    },
-  ]);
+  const { data: loans = [], isLoading, error } = useGetLoansQuery();
+  const [createLoan] = useCreateLoanMutation();
+  const [updateLoan] = useUpdateLoanMutation();
+  const [deleteLoan] = useDeleteLoanMutation();
 
   const [showDialog, setShowDialog] = useState(false);
   const [showRepaymentDialog, setShowRepaymentDialog] = useState(false);
   const [showInterestDialog, setShowInterestDialog] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
-  const [filterType, setFilterType] = useState<"all" | "given" | "taken">("all");
+  const [filterType, setFilterType] = useState<"all" | "GIVEN" | "TAKEN">("all");
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null);
 
   const [formData, setFormData] = useState<FormData>({
-    person_name: "",
-    loan_type: "given",
+    personName: "",
+    loanType: "GIVEN",
     principal: 0,
-    interest_rate: 0,
-    interest_type: "simple",
-    start_date: formatDate(new Date()),
+    interestRate: 0,
+    interestType: "SIMPLE",
+    startDate: formatDate(new Date()),
     notes: "",
   });
 
@@ -160,57 +144,57 @@ export default function Loans() {
     notes: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingLoan) {
-      setLoans(loans.map(l => l.id === editingLoan.id ? { ...l, ...formData } : l));
-    } else {
-      const newLoan: Loan = {
-        id: Date.now(),
-        ...formData,
-        total_repaid: 0,
-        interest_paid: 0,
-      };
-      setLoans([...loans, newLoan]);
+    try {
+      if (editingLoan) {
+        await updateLoan({ id: editingLoan.id, data: formData }).unwrap();
+      } else {
+        await createLoan(formData).unwrap();
+      }
+      setShowDialog(false);
+      setEditingLoan(null);
+      resetForm();
+    } catch (err) {
+      console.error("Failed to save loan:", err);
     }
-    setShowDialog(false);
-    setEditingLoan(null);
-    resetForm();
   };
 
-  const handleRepayment = (e: React.FormEvent) => {
+  const handleRepayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLoan) return;
 
-    setLoans(loans.map(l => {
-      if (l.id === selectedLoan.id) {
-        if (repaymentData.is_interest) {
-          return { ...l, interest_paid: l.interest_paid + repaymentData.amount };
-        } else {
-          return { ...l, total_repaid: l.total_repaid + repaymentData.amount };
-        }
-      }
-      return l;
-    }));
+    try {
+      const updatedData = repaymentData.is_interest
+        ? { interest_paid: selectedLoan.interest_paid + repaymentData.amount }
+        : { total_repaid: selectedLoan.total_repaid + repaymentData.amount };
 
-    setShowRepaymentDialog(false);
-    setSelectedLoan(null);
+      await updateLoan({ id: selectedLoan.id, data: updatedData }).unwrap();
+      setShowRepaymentDialog(false);
+      setSelectedLoan(null);
+    } catch (err) {
+      console.error("Failed to record repayment:", err);
+    }
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Delete this loan? This cannot be undone.")) return;
-    setLoans(loans.filter(l => l.id !== id));
+    try {
+      await deleteLoan(id).unwrap();
+    } catch (err) {
+      console.error("Failed to delete loan:", err);
+    }
   };
 
   const handleEdit = (loan: Loan) => {
     setEditingLoan(loan);
     setFormData({
-      person_name: loan.person_name,
-      loan_type: loan.loan_type,
+      personName: loan.personName,
+      loanType: loan.loanType,
       principal: loan.principal,
-      interest_rate: loan.interest_rate,
-      interest_type: loan.interest_type,
-      start_date: loan.start_date,
+      interestRate: loan.interestRate,
+      interestType: loan.interestType,
+      startDate: loan.startDate.split("T")[0],
       notes: loan.notes,
     });
     setShowDialog(true);
@@ -223,12 +207,12 @@ export default function Loans() {
 
   const resetForm = () => {
     setFormData({
-      person_name: "",
-      loan_type: "given",
+      personName: "",
+      loanType: "GIVEN",
       principal: 0,
-      interest_rate: 0,
-      interest_type: "simple",
-      start_date: formatDate(new Date()),
+      interestRate: 0,
+      interestType: "SIMPLE",
+      startDate: formatDate(new Date()),
       notes: "",
     });
   };
@@ -237,9 +221,25 @@ export default function Loans() {
     return loan.principal - loan.total_repaid;
   };
 
-  const filteredLoans = filterType === "all" ? loans : loans.filter(l => l.loan_type === filterType);
-  const totalReceivable = loans.filter(l => l.loan_type === "given").reduce((sum, l) => sum + getOutstandingBalance(l), 0);
-  const totalPayable = loans.filter(l => l.loan_type === "taken").reduce((sum, l) => sum + getOutstandingBalance(l), 0);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-500">Loading loans...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-red-500">Error loading loans. Please try again.</p>
+      </div>
+    );
+  }
+
+  const filteredLoans = filterType === "all" ? loans : loans.filter(l => l.loanType === filterType);
+  const totalReceivable = loans.filter(l => l.loanType === "GIVEN").reduce((sum, l) => sum + getOutstandingBalance(l), 0);
+  const totalPayable = loans.filter(l => l.loanType === "TAKEN").reduce((sum, l) => sum + getOutstandingBalance(l), 0);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -250,9 +250,9 @@ export default function Loans() {
             <h1 className="text-2xl font-bold text-gray-900">Loans</h1>
             <p className="text-gray-500 text-sm mt-1">Track loans given and taken with interest</p>
           </div>
-          <Button 
-          className="bg-black text-white "
-          onClick={() => { resetForm(); setEditingLoan(null); setShowDialog(true); }}>
+          <Button
+            className="bg-black text-white "
+            onClick={() => { resetForm(); setEditingLoan(null); setShowDialog(true); }}>
             <Plus size={16} className="mr-2" />
             New Loan
           </Button>
@@ -266,7 +266,7 @@ export default function Loans() {
               <p className="text-sm font-medium text-gray-600">TOTAL RECEIVABLE</p>
             </div>
             <p className="text-3xl font-bold text-emerald-600">{formatCurrency(totalReceivable)}</p>
-            <p className="text-xs text-gray-500 mt-1">{loans.filter(l => l.loan_type === "given").length} active loans</p>
+            <p className="text-xs text-gray-500 mt-1">{loans.filter(l => l.loanType === "GIVEN").length} active loans</p>
           </div>
 
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
@@ -275,15 +275,15 @@ export default function Loans() {
               <p className="text-sm font-medium text-gray-600">TOTAL PAYABLE</p>
             </div>
             <p className="text-3xl font-bold text-rose-600">{formatCurrency(totalPayable)}</p>
-            <p className="text-xs text-gray-500 mt-1">{loans.filter(l => l.loan_type === "taken").length} active loans</p>
+            <p className="text-xs text-gray-500 mt-1">{loans.filter(l => l.loanType === "TAKEN").length} active loans</p>
           </div>
         </div>
 
         {/* Filters */}
         <div className="flex gap-2 text-black cursor-pointer">
           <Button variant={filterType === "all" ? "outline" : "default"} size="sm" onClick={() => setFilterType("all")}>All</Button>
-          <Button variant={filterType === "given" ? "outline" : "default"} size="sm" onClick={() => setFilterType("given")}>Given</Button>
-          <Button variant={filterType === "taken" ? "outline" : "default"} size="sm" onClick={() => setFilterType("taken")}>Taken</Button>
+          <Button variant={filterType === "GIVEN" ? "outline" : "default"} size="sm" onClick={() => setFilterType("GIVEN")}>Given</Button>
+          <Button variant={filterType === "TAKEN" ? "outline" : "default"} size="sm" onClick={() => setFilterType("TAKEN")}>Taken</Button>
         </div>
 
         {/* Loans List */}
@@ -296,7 +296,7 @@ export default function Loans() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredLoans.map((loan) => {
               const outstanding = getOutstandingBalance(loan);
-              const isGiven = loan.loan_type === "given";
+              const isGiven = loan.loanType === "GIVEN";
               const interest = calculateInterest(loan);
 
               return (
@@ -307,7 +307,7 @@ export default function Loans() {
                         <User size={20} className={isGiven ? "text-emerald-600" : "text-rose-600"} strokeWidth={1.5} />
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900">{loan.person_name}</h3>
+                        <h3 className="font-medium text-gray-900">{loan.personName}</h3>
                         <span className={`text-xs px-2 py-0.5 rounded ${isGiven ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
                           {isGiven ? "Given" : "Taken"}
                         </span>
@@ -332,11 +332,11 @@ export default function Loans() {
                       <span className="text-gray-500">Repaid</span>
                       <span className="font-mono text-gray-900">{formatCurrency(loan.total_repaid)}</span>
                     </div>
-                    {loan.interest_rate > 0 && (
+                    {loan.interestRate > 0 && (
                       <>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Interest Rate</span>
-                          <span className="font-mono text-gray-900">{loan.interest_rate}% ({loan.interest_type})</span>
+                          <span className="font-mono text-gray-900">{loan.interestRate}% ({loan.interestType})</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Accrued Interest</span>
@@ -369,7 +369,7 @@ export default function Loans() {
                         <Banknote size={14} className="mr-1" />
                         Pay
                       </Button>
-                      {loan.interest_rate > 0 && (
+                      {loan.interestRate > 0 && (
                         <Button variant="outline" size="sm" onClick={() => showInterestCalc(loan)}>
                           <Calculator size={14} />
                         </Button>
@@ -377,7 +377,7 @@ export default function Loans() {
                     </div>
                   </div>
 
-                  <p className="text-xs text-gray-400 mt-3">Started: {loan.start_date}</p>
+                  <p className="text-xs text-gray-400 mt-3">Started: {loan.startDate}</p>
                 </div>
               );
             })}
@@ -386,23 +386,27 @@ export default function Loans() {
 
         {/* Create/Edit Loan Dialog */}
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
-          <DialogContent className="bg-white text-black">
+          <DialogContent className="bg-white text-black overflow-visible">
             <DialogHeader>
               <DialogTitle>{editingLoan ? "Edit Loan" : "New Loan"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label>Person Name</Label>
-                <Input value={formData.person_name} onChange={(e) => setFormData({ ...formData, person_name: e.target.value })} className="mt-1" placeholder="Enter name" required />
+                <Input value={formData.personName} onChange={(e) => setFormData({ ...formData, personName: e.target.value })} className="mt-1" placeholder="Enter name" required />
               </div>
 
               <div>
                 <Label>Loan Type</Label>
-                <Select value={formData.loan_type} onValueChange={(val: "given" | "taken") => setFormData({ ...formData, loan_type: val })}>
+                <Select value={formData.loanType} onValueChange={(val: "GIVEN" | "TAKEN") => setFormData({ ...formData, loanType: val })}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="given">Loan Given (You lent money)</SelectItem>
-                    <SelectItem value="taken">Loan Taken (You borrowed money)</SelectItem>
+                  <SelectContent
+                    position="popper"
+                    sideOffset={5}
+                    className="z-[100]"
+                  >
+                    <SelectItem value="GIVEN">Loan Given (You lent money)</SelectItem>
+                    <SelectItem value="TAKEN">Loan Taken (You borrowed money)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -410,22 +414,40 @@ export default function Loans() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Principal Amount (₹)</Label>
-                  <Input type="number" step="0.01" value={formData.principal} onChange={(e) => setFormData({ ...formData, principal: parseFloat(e.target.value) || 0 })} className="mt-1 font-mono" required />
+                  <Input type="number" step="0.01" value={formData.principal}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        principal: e.target.value === "" ? "" : Number(e.target.value),
+                      })
+                    }
+                    className="mt-1 font-mono" required />
                 </div>
                 <div>
                   <Label>Interest Rate (% p.a.)</Label>
-                  <Input type="number" step="0.01" value={formData.interest_rate} onChange={(e) => setFormData({ ...formData, interest_rate: parseFloat(e.target.value) || 0 })} className="mt-1 font-mono" />
+                  <Input type="number" step="0.01" value={formData.interestRate}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        interestRate: e.target.value === "" ? "" : Number(e.target.value),
+                      })
+                    }
+                    className="mt-1 font-mono" />
                 </div>
               </div>
 
-              {formData.interest_rate > 0 && (
+              {formData.interestRate > 0 && (
                 <div>
                   <Label>Interest Type</Label>
-                  <Select value={formData.interest_type} onValueChange={(val: "simple" | "compound") => setFormData({ ...formData, interest_type: val })}>
+                  <Select value={formData.interestType} onValueChange={(val: "SIMPLE" | "COMPOUND") => setFormData({ ...formData, interestType: val })}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="simple">Simple Interest</SelectItem>
-                      <SelectItem value="compound">Compound Interest (Monthly)</SelectItem>
+                    <SelectContent
+                      position="popper"
+                      sideOffset={5}
+                      className="z-[100]"
+                    >
+                      <SelectItem value="SIMPLE">Simple Interest</SelectItem>
+                      <SelectItem value="COMPOUND">Compound Interest (Monthly)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -433,7 +455,7 @@ export default function Loans() {
 
               <div>
                 <Label>Start Date</Label>
-                <Input type="date" value={formData.start_date} onChange={(e) => setFormData({ ...formData, start_date: e.target.value })} className="mt-1" />
+                <Input type="date" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} className="mt-1" />
               </div>
 
               <div>
@@ -453,7 +475,7 @@ export default function Loans() {
         <Dialog open={showRepaymentDialog} onOpenChange={setShowRepaymentDialog}>
           <DialogContent className="bg-white text-black">
             <DialogHeader>
-              <DialogTitle>Record Payment - {selectedLoan?.person_name}</DialogTitle>
+              <DialogTitle>Record Payment - {selectedLoan?.personName}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleRepayment} className="space-y-4">
               <div>
@@ -486,7 +508,7 @@ export default function Loans() {
         <Dialog open={showInterestDialog} onOpenChange={setShowInterestDialog}>
           <DialogContent className="bg-white text-black">
             <DialogHeader>
-              <DialogTitle>Interest Calculation - {selectedLoan?.person_name}</DialogTitle>
+              <DialogTitle>Interest Calculation - {selectedLoan?.personName}</DialogTitle>
             </DialogHeader>
             {selectedLoan && (
               <div className="space-y-4">
@@ -505,7 +527,7 @@ export default function Loans() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Interest Rate</span>
-                          <span className="font-mono">{interest.interest_rate}% ({interest.interest_type})</span>
+                          <span className="font-mono">{interest.interestRate}% ({interest.interestType})</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Days Elapsed</span>
@@ -528,7 +550,7 @@ export default function Loans() {
                         <div className="border-t border-gray-200 pt-2 mt-2">
                           <div className="flex justify-between text-lg font-medium">
                             <span className="text-gray-900">Total Due</span>
-                            <span className={`font-mono ${selectedLoan.loan_type === "given" ? "text-emerald-600" : "text-rose-600"}`}>
+                            <span className={`font-mono ${selectedLoan.loanType === "GIVEN" ? "text-emerald-600" : "text-rose-600"}`}>
                               {formatCurrency(interest.total_due)}
                             </span>
                           </div>

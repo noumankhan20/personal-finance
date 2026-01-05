@@ -8,7 +8,7 @@ import acccountsRoutes from './routes/accounts.routes';
 import categoriesRoutes from './routes/categories.routes';
 import authRoutes from './routes/auth.routes'
 import entryRoutes from './routes/entry.routes';
-
+import loanRoutes from './routes/loan.routes';
 dotenv.config()
 
 const app = express()
@@ -32,7 +32,7 @@ app.use("/api/accounts",acccountsRoutes)
 app.use("/api/categories",categoriesRoutes)
 app.use('/api/auth', authRoutes);
 app.use('/api/entries', entryRoutes)
-
+app.use('/api/loans',loanRoutes)
 // Sample route
 app.get('/', (req, res) => {
   res.send('Backend server running...')
