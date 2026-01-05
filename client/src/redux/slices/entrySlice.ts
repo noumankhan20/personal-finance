@@ -11,7 +11,7 @@ export interface Entry {
   entryType: EntryType
   date: string
 
-  amount: number
+  amount: string            // backend sends string
   description: string
   notes: string | null
 
@@ -24,7 +24,23 @@ export interface Entry {
 
   createdAt: string
   updatedAt: string
+
+  account?: {
+    id: string
+    accountname: string
+    accountType: string
+    description: string | null
+    openingBalance: string
+    currentBalance: string
+  }
+
+  category?: {
+    id: string
+    name: string
+    parentId: string | null
+  }
 }
+
 
 /* =========================
    Payloads

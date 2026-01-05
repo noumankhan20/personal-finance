@@ -216,9 +216,18 @@ export const getEntryById = async (req: Request, res: Response) => {
 export const updateEntry = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const data = req.body;
 
-    const entry = await prisma.entry.findUnique({ where: { id } });
+    const {
+      date,
+      description,
+      amount,
+      categoryId,
+      notes,
+    } = req.body;
+
+    const entry = await prisma.entry.findUnique({
+      where: { id },
+    });
 
     if (!entry) {
       return res.status(404).json({ message: "Entry not found" });
@@ -232,7 +241,19 @@ export const updateEntry = async (req: Request, res: Response) => {
 
     const updated = await prisma.entry.update({
       where: { id },
-      data,
+      data: {
+        // ✅ CRITICAL FIX
+        date: date ? new Date(date) : undefined,
+
+        description,
+        amount,
+        categoryId: categoryId ?? null,
+        notes,
+      },
+      include: {
+        account: true,
+        category: true,
+      },
     });
 
     res.json(updated);
@@ -241,6 +262,7 @@ export const updateEntry = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to update entry" });
   }
 };
+
 
 /**
  * DELETE Entry
