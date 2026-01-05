@@ -25,6 +25,8 @@ import {
   useCreateLoanMutation,
   useUpdateLoanMutation,
   useDeleteLoanMutation,
+  useCreateLoanRepaymentMutation,
+  useGetLoanRepaymentsQuery,
 } from "@/redux/slices/loanSlice";
 
 interface Loan {
@@ -126,6 +128,7 @@ export default function Loans() {
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [filterType, setFilterType] = useState<"all" | "GIVEN" | "TAKEN">("all");
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null);
+  const [createLoanRepayment] = useCreateLoanRepaymentMutation();
 
   const [formData, setFormData] = useState<FormData>({
     personName: "",
@@ -161,21 +164,27 @@ export default function Loans() {
   };
 
   const handleRepayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedLoan) return;
+  e.preventDefault();
+  if (!selectedLoan) return;
 
-    try {
-      const updatedData = repaymentData.is_interest
-        ? { interest_paid: selectedLoan.interest_paid + repaymentData.amount }
-        : { total_repaid: selectedLoan.total_repaid + repaymentData.amount };
+  try {
+    await createLoanRepayment({
+      loanId: selectedLoan.id,
+      amount: repaymentData.amount,
+      repaymentType: repaymentData.is_interest
+        ? "INTEREST"
+        : "PRINCIPAL",
+      date: repaymentData.date,
+      notes: repaymentData.notes,
+    }).unwrap();
 
-      await updateLoan({ id: selectedLoan.id, data: updatedData }).unwrap();
-      setShowRepaymentDialog(false);
-      setSelectedLoan(null);
-    } catch (err) {
-      console.error("Failed to record repayment:", err);
-    }
-  };
+    setShowRepaymentDialog(false);
+    setSelectedLoan(null);
+  } catch (err) {
+    console.error("Failed to record repayment:", err);
+  }
+};
+
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this loan? This cannot be undone.")) return;

@@ -1,5 +1,5 @@
 import { apiSlice } from "./apiSlice";
-import {Loan} from "@/types/loans"
+import {Loan,LoanRepayment} from "@/types/loans"
 
 export const loansApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -68,6 +68,39 @@ export const loansApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Loan"],
     }),
+
+     createLoanRepayment: builder.mutation<
+      LoanRepayment,
+      {
+        loanId: string;
+        amount: number;
+        repaymentType: "PRINCIPAL" | "INTEREST";
+        date: string;
+        notes?: string;
+      }
+    >({
+      query: ({ loanId, ...body }) => ({
+        url: `/loans/${loanId}/create-repayment`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_res, _err, { loanId }) => [
+        { type: "Loan", id: loanId },
+        "Loan",
+      ],
+    }),
+
+    /* -------------------------------
+       GET REPAYMENTS FOR A LOAN
+       GET /api/loans/:loanId/get-repayment
+    -------------------------------- */
+    getLoanRepayments: builder.query<LoanRepayment[], string>({
+      query: (loanId) => `/loans/${loanId}/get-repayment`,
+      providesTags: (_res, _err, loanId) => [
+        { type: "Loan", id: loanId },
+      ],
+    }),
+
   }),
 });
 
@@ -77,4 +110,6 @@ export const {
   useCreateLoanMutation,
   useUpdateLoanMutation,
   useDeleteLoanMutation,
+  useCreateLoanRepaymentMutation,
+  useGetLoanRepaymentsQuery,
 } = loansApiSlice;

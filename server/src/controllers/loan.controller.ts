@@ -128,10 +128,55 @@ const deleteLoan = async (req: Request, res: Response) => {
 };
 
 
+const createLoanRepayment = async (req: Request, res: Response) => {
+  try {
+    const { loanId } = req.params;
+    const { amount, repaymentType, date, notes } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: "Invalid amount" });
+    }
+
+    const repayment = await prisma.loanRepayment.create({
+      data: {
+        loanId,
+        amount,
+        repaymentType,
+        date: new Date(date),
+        notes,
+      },
+    });
+
+    return res.status(201).json(repayment);
+  } catch (error) {
+    console.error("createLoanRepayment:", error);
+    return res.status(500).json({ message: "Failed to record repayment" });
+  }
+};
+
+const getLoanRepayments = async (req: Request, res: Response) => {
+  try {
+    const { loanId } = req.params;
+
+    const repayments = await prisma.loanRepayment.findMany({
+      where: { loanId },
+      orderBy: { date: "asc" },
+    });
+
+    return res.json(repayments);
+  } catch (error) {
+    console.error("getLoanRepayments:", error);
+    return res.status(500).json({ message: "Failed to fetch repayments" });
+  }
+};
+
+
 export {
     createLoan,
     getLoans,
     getLoanById,
     updateLoan,
-    deleteLoan
+    deleteLoan,
+    createLoanRepayment,
+    getLoanRepayments
 }

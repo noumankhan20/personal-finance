@@ -4,7 +4,9 @@ import {
     getLoans,
     getLoanById,
     updateLoan,
-    deleteLoan
+    deleteLoan,
+    createLoanRepayment,
+    getLoanRepayments
 } from "../controllers/loan.controller"
 
 const router = Router ();
@@ -18,6 +20,10 @@ router.get("/:id/get",getLoanById)
 router.put("/:id/update",updateLoan)
 
 router.delete("/:id/delete",deleteLoan)
+
+router.post("/:loanId/create-repayment",createLoanRepayment)
+
+router.get("/:loanId/get-repayment",getLoanRepayments)
 
 const loanRoutes = router;
 export default loanRoutes;
