@@ -6,6 +6,9 @@ import cors from 'cors';
 import { prisma } from './config/db.config';
 import acccountsRoutes from './routes/accounts.routes';
 import categoriesRoutes from './routes/categories.routes';
+import authRoutes from './routes/auth.routes'
+import entryRoutes from './routes/entry.routes';
+
 dotenv.config()
 
 const app = express()
@@ -27,6 +30,8 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use("/api/accounts",acccountsRoutes)
 app.use("/api/categories",categoriesRoutes)
+app.use('/api/auth', authRoutes);
+app.use('/api/entries', entryRoutes)
 
 // Sample route
 app.get('/', (req, res) => {

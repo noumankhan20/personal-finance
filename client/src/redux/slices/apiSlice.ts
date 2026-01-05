@@ -33,6 +33,7 @@ export const apiSlice = createApi({
   tagTypes: [
     'Account',
     'Category',
+    'Entry'
   ],
   endpoints: () => ({}),
 })

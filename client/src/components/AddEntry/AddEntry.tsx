@@ -1,25 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { useGetAccountsQuery } from "../../redux/slices/accountsSlice";
+import { useGetCategoriesQuery, useCreateCategoryMutation } from "../../redux/slices/categoriesSlice";
+import { useCreateEntryMutation, useCreateTransferMutation } from "../../redux/slices/entrySlice";
 
 // Types
-interface Account {
-  id: string;
-  name: string;
-  account_type: string;
-  current_balance: number;
-  person_name?: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  type: "income" | "expense";
-  parent_id?: string | null;
-  children?: Category[];
-}
-
 interface EntryData {
   date: string;
   account_id: string;
@@ -40,41 +26,6 @@ interface TransferData {
   notes: string;
 }
 
-// Mock data
-const mockAccounts: Account[] = [
-  { id: "1", name: "HDFC Bank", account_type: "bank", current_balance: 50000 },
-  { id: "2", name: "Cash Wallet", account_type: "cash", current_balance: 5000 },
-  { id: "3", name: "Stocks", account_type: "investment", current_balance: 100000 },
-  { id: "4", name: "Loan to Friend", account_type: "loan_receivable", current_balance: 20000, person_name: "Rahul" },
-  { id: "5", name: "Personal Loan", account_type: "loan_payable", current_balance: 50000 },
-];
-
-const mockCategories: Category[] = [
-  {
-    id: "c1",
-    name: "Food & Dining",
-    type: "expense",
-    children: [
-      { id: "c1-1", name: "Groceries", type: "expense" },
-      { id: "c1-2", name: "Restaurants", type: "expense" },
-    ],
-  },
-  {
-    id: "c2",
-    name: "Transportation",
-    type: "expense",
-    children: [
-      { id: "c2-1", name: "Fuel", type: "expense" },
-      { id: "c2-2", name: "Public Transport", type: "expense" },
-    ],
-  },
-  { id: "c3", name: "Shopping", type: "expense" },
-  { id: "c4", name: "Interest Paid", type: "expense" },
-  { id: "c5", name: "Salary", type: "income" },
-  { id: "c6", name: "Freelance", type: "income" },
-  { id: "c7", name: "Interest Received", type: "income" },
-];
-
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -82,14 +33,27 @@ const formatCurrency = (amount: number) =>
     minimumFractionDigits: 2,
   }).format(amount || 0);
 
+const formatDate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function AddEntry() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"expense" | "income" | "transfer">("expense");
 
+  // RTK Query hooks
+  const { data: accounts = [], isLoading: accountsLoading } = useGetAccountsQuery();
+  const { data: expenseCategories = [], isLoading: expenseCategoriesLoading } = useGetCategoriesQuery("expense");
+  const { data: incomeCategories = [], isLoading: incomeCategoriesLoading } = useGetCategoriesQuery("income");
+  
+  const [createEntry, { isLoading: creatingEntry }] = useCreateEntryMutation();
+  const [createTransfer, { isLoading: creatingTransfer }] = useCreateTransferMutation();
+  const [createCategory, { isLoading: creatingCategory }] = useCreateCategoryMutation();
+
   const [entryData, setEntryData] = useState<EntryData>({
-    date: format(new Date(), "yyyy-MM-dd"),
+    date: formatDate(new Date()),
     account_id: "",
     amount: "",
     description: "",
@@ -100,7 +64,7 @@ export default function AddEntry() {
   });
 
   const [transferData, setTransferData] = useState<TransferData>({
-    date: format(new Date(), "yyyy-MM-dd"),
+    date: formatDate(new Date()),
     from_account_id: "",
     to_account_id: "",
     amount: "",
@@ -112,47 +76,54 @@ export default function AddEntry() {
   const [newCategoryName, setNewCategoryName] = useState("");
 
   useEffect(() => {
-    // Load mock data
-    setAccounts(mockAccounts);
-    setCategories(mockCategories);
-
-    const defaultAccount = mockAccounts.find(
-      (a) => a.account_type === "bank" || a.account_type === "cash"
+    const defaultAccount = accounts.find(
+      (a) => a.accountType === "bank" || a.accountType === "cash"
     );
-    if (defaultAccount) {
+    if (defaultAccount && !entryData.account_id) {
       setEntryData((prev) => ({ ...prev, account_id: defaultAccount.id }));
       setTransferData((prev) => ({ ...prev, from_account_id: defaultAccount.id }));
     }
-  }, []);
+  }, [accounts, entryData.account_id]);
 
-  const handleEntrySubmit = (e: React.FormEvent) => {
+  const handleEntrySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!entryData.account_id) {
       alert("Please select an account");
       return;
     }
 
-    console.log("Entry submitted:", {
-      ...entryData,
-      transaction_type: activeTab,
-      category_id: entryData.sub_category_id || entryData.category_id || null,
-    });
+    try {
+      const payload = {
+        entryType: activeTab as "income" | "expense",
+        date: entryData.date,
+        amount: parseFloat(entryData.amount),
+        description: entryData.description,
+        notes: entryData.notes || undefined,
+        accountId: entryData.account_id,
+        categoryId: entryData.sub_category_id || entryData.category_id || null,
+        linkedLoanId: entryData.linked_loan_id || null,
+      };
 
-    alert(`${activeTab === "income" ? "Income" : "Expense"} recorded successfully!`);
+      await createEntry(payload).unwrap();
+      alert(`${activeTab === "income" ? "Income" : "Expense"} recorded successfully!`);
 
-    setEntryData({
-      date: format(new Date(), "yyyy-MM-dd"),
-      account_id: entryData.account_id,
-      amount: "",
-      description: "",
-      category_id: "",
-      sub_category_id: "",
-      linked_loan_id: "",
-      notes: "",
-    });
+      setEntryData({
+        date: formatDate(new Date()),
+        account_id: entryData.account_id,
+        amount: "",
+        description: "",
+        category_id: "",
+        sub_category_id: "",
+        linked_loan_id: "",
+        notes: "",
+      });
+    } catch (error) {
+      console.error("Failed to create entry:", error);
+      alert("Failed to create entry. Please try again.");
+    }
   };
 
-  const handleTransferSubmit = (e: React.FormEvent) => {
+  const handleTransferSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!transferData.from_account_id || !transferData.to_account_id) {
       alert("Please select both accounts");
@@ -163,56 +134,82 @@ export default function AddEntry() {
       return;
     }
 
-    console.log("Transfer submitted:", transferData);
-    alert("Transfer recorded successfully!");
+    try {
+      const payload = {
+        date: transferData.date,
+        amount: parseFloat(transferData.amount),
+        description: transferData.description,
+        notes: transferData.notes || undefined,
+        fromAccountId: transferData.from_account_id,
+        toAccountId: transferData.to_account_id,
+      };
 
-    setTransferData({
-      date: format(new Date(), "yyyy-MM-dd"),
-      from_account_id: transferData.from_account_id,
-      to_account_id: "",
-      amount: "",
-      description: "",
-      notes: "",
-    });
+      await createTransfer(payload).unwrap();
+      alert("Transfer recorded successfully!");
+
+      setTransferData({
+        date: formatDate(new Date()),
+        from_account_id: transferData.from_account_id,
+        to_account_id: "",
+        amount: "",
+        description: "",
+        notes: "",
+      });
+    } catch (error) {
+      console.error("Failed to create transfer:", error);
+      alert("Failed to create transfer. Please try again.");
+    }
   };
 
-  const createNewCategory = () => {
+  const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
 
-    const newCat: Category = {
-      id: `new-${Date.now()}`,
-      name: newCategoryName,
-      type: activeTab === "income" ? "income" : "expense",
-      parent_id: entryData.category_id || null,
-    };
+    try {
+      await createCategory({
+        name: newCategoryName,
+        type: activeTab === "income" ? "income" : "expense",
+        parentId: entryData.category_id || undefined,
+      }).unwrap();
 
-    console.log("New category created:", newCat);
-    alert("Category created successfully!");
-    
-    setNewCategoryName("");
-    setShowNewCategory(false);
+      alert("Category created successfully!");
+      setNewCategoryName("");
+      setShowNewCategory(false);
+    } catch (error) {
+      console.error("Failed to create category:", error);
+      alert("Failed to create category. Please try again.");
+    }
   };
 
   const getAccountBalance = (id: string) => {
     const account = accounts.find((a) => a.id === id);
-    return account ? formatCurrency(account.current_balance) : "";
+    return account ? formatCurrency(account.currentBalance) : "";
   };
 
-  const expenseCategories = categories.filter((c) => c.type === "expense");
-  const incomeCategories = categories.filter((c) => c.type === "income");
   const currentCategories = activeTab === "income" ? incomeCategories : expenseCategories;
   const selectedCategoryData = currentCategories.find((c) => c.id === entryData.category_id);
 
   const assetAccounts = accounts.filter((a) =>
-    ["bank", "cash", "investment"].includes(a.account_type)
+    ["bank", "cash", "investment"].includes(a.accountType)
   );
   const loanAccounts = accounts.filter((a) =>
-    ["loan_receivable", "loan_payable"].includes(a.account_type)
+    a.accountType === "credit_card"
   );
 
   const isInterestCategory =
     selectedCategoryData?.name === "Interest Paid" ||
     selectedCategoryData?.name === "Interest Received";
+
+  const loading = creatingEntry || creatingTransfer || creatingCategory;
+
+  if (accountsLoading || expenseCategoriesLoading || incomeCategoriesLoading) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-4">
@@ -268,7 +265,7 @@ export default function AddEntry() {
 
       {/* Expense/Income Form */}
       {(activeTab === "expense" || activeTab === "income") && (
-        <form onSubmit={handleEntrySubmit} className="bg-white rounded-lg shadow p-6 space-y-5">
+        <div className="bg-white rounded-lg shadow p-6 space-y-5">
           <p className="text-sm text-gray-600">
             Record {activeTab === "income" ? "an income" : "an expense"} entry
           </p>
@@ -293,7 +290,7 @@ export default function AddEntry() {
                 <option value="">Select account</option>
                 {assetAccounts.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.name}
+                    {a.accountname}
                   </option>
                 ))}
               </select>
@@ -350,8 +347,8 @@ export default function AddEntry() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select category</option>
-              <option value="none">No category</option>
-              {currentCategories.map((cat) => (
+              <option value="">No category</option>
+              {currentCategories.filter(c => !c.parentId).map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
                 </option>
@@ -407,8 +404,7 @@ export default function AddEntry() {
                 <option value="none">No specific loan</option>
                 {loanAccounts.map((acc) => (
                   <option key={acc.id} value={acc.id}>
-                    {acc.name} {acc.person_name ? `(${acc.person_name})` : ""} -{" "}
-                    {formatCurrency(acc.current_balance)}
+                    {acc.accountname} - {formatCurrency(acc.currentBalance)}
                   </option>
                 ))}
               </select>
@@ -444,8 +440,9 @@ export default function AddEntry() {
               />
               <button
                 type="button"
-                onClick={createNewCategory}
+                onClick={handleCreateCategory}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                disabled={creatingCategory}
               >
                 Add
               </button>
@@ -475,7 +472,8 @@ export default function AddEntry() {
           </div>
 
           <button
-            type="submit"
+            type="button"
+            onClick={handleEntrySubmit}
             disabled={loading}
             className="w-full flex items-center justify-center gap-2 py-3 bg-gray-900 text-white rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -484,12 +482,12 @@ export default function AddEntry() {
             </svg>
             {loading ? "Processing..." : `Record ${activeTab === "income" ? "Income" : "Expense"}`}
           </button>
-        </form>
+        </div>
       )}
 
       {/* Transfer Form */}
       {activeTab === "transfer" && (
-        <form onSubmit={handleTransferSubmit} className="bg-white rounded-lg shadow p-6 space-y-5">
+        <div className="bg-white rounded-lg shadow p-6 space-y-5">
           <p className="text-sm text-gray-600">
             Transfer money between accounts (bank to loan, bank to bank, etc.)
           </p>
@@ -517,7 +515,7 @@ export default function AddEntry() {
                 <option value="">Select source</option>
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.name}
+                    {a.accountname}
                   </option>
                 ))}
               </select>
@@ -538,7 +536,7 @@ export default function AddEntry() {
                 <option value="">Select destination</option>
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.name}
+                    {a.accountname}
                   </option>
                 ))}
               </select>
@@ -586,7 +584,8 @@ export default function AddEntry() {
           </div>
 
           <button
-            type="submit"
+            type="button"
+            onClick={handleTransferSubmit}
             disabled={loading}
             className="w-full flex items-center justify-center gap-2 py-3 bg-gray-900 text-white rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -595,7 +594,7 @@ export default function AddEntry() {
             </svg>
             {loading ? "Processing..." : "Record Transfer"}
           </button>
-        </form>
+        </div>
       )}
     </div>
   );

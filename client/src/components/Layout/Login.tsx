@@ -2,34 +2,41 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
 import { Lock, Eye, EyeOff } from "lucide-react";
+
+import { useLoginMutation } from "@/redux/slices/authApiSlice";
+import { setCredentials } from "@/redux/slices/authSlice";
 
 export default function LoginPage() {
   const router = useRouter();
+  const dispatch = useDispatch();
+
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+
+  const [login, { isLoading }] = useLoginMutation();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (!password) {
       alert("Please enter your password");
       return;
     }
 
-    setLoading(true);
-
-    // Simulate authentication
-    setTimeout(() => {
-      // Add your authentication logic here
-      alert("Login successful!");
+    try {
+      const res = await login({ password }).unwrap();
+      dispatch(setCredentials(res.accessToken));
       router.push("/dashboard");
-      setLoading(false);
-    }, 1000);
+    } catch (err) {
+      alert("Invalid password");
+    }
   };
 
   return (
@@ -44,16 +51,24 @@ export default function LoginPage() {
 
         {/* Title */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">LedgerOS</h1>
-          <p className="text-gray-500">Enter your password to continue</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            LedgerOS
+          </h1>
+          <p className="text-gray-500">
+            Enter your password to continue
+          </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <Label htmlFor="password" className="text-gray-900 text-sm font-medium">
+            <Label
+              htmlFor="password"
+              className="text-gray-900 text-sm font-medium"
+            >
               Password
             </Label>
+
             <div className="relative mt-1.5">
               <Input
                 id="password"
@@ -63,27 +78,25 @@ export default function LoginPage() {
                 placeholder="Enter password"
                 className="pr-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
                 required
+                disabled={isLoading}
               />
+
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                {showPassword ? (
-                  <EyeOff size={20} />
-                ) : (
-                  <Eye size={20} />
-                )}
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
           </div>
 
           <Button
             type="submit"
-            disabled={loading}
+            disabled={isLoading}
             className="w-full bg-gray-900 hover:bg-gray-800 text-white py-6 text-base"
           >
-            {loading ? "Unlocking..." : "Unlock"}
+            {isLoading ? "Unlocking..." : "Unlock"}
           </Button>
         </form>
 

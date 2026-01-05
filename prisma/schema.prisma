@@ -12,15 +12,12 @@ datasource db {
   provider = "postgresql"
 }
 
-
-model User{
-   id        String   @id @default(cuid())
-   email     String   @unique
-   password  String
-   phoneNo   String?
-   fullName  String?  
+model Admin {
+  id           String   @id @default(uuid())
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }
-
 
 enum AccountType {
   bank
@@ -35,6 +32,51 @@ enum TransactionType {
   transfer
 }
 
+enum EntryType {
+  income
+  expense
+  transfer
+}
+
+model Entry {
+  id              String      @id @default(uuid())
+
+  // Core type
+  entryType       EntryType
+  date            DateTime
+
+  // Money & text
+  amount          Decimal     @db.Decimal(14, 2)
+  description     String
+  notes           String?
+
+  // Primary account (always required)
+  accountId       String
+  account         Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  // Category (expense / income only)
+  categoryId      String?
+  category        Category?   @relation(fields: [categoryId], references: [id])
+
+  // Interest → loan linking (optional)
+  linkedLoanId    String?
+  linkedLoan      Account?    @relation("EntryLoanLink", fields: [linkedLoanId], references: [id])
+
+  // Transfer support
+  transferGroupId String?     // same UUID for both sides of a transfer
+  counterAccountId String?    // from ↔ to account
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([entryType])
+  @@index([date])
+  @@index([accountId])
+  @@index([categoryId])
+  @@index([transferGroupId])
+}
+
+
 model Account {
   id              String        @id @default(uuid())
   accountname     String
@@ -44,6 +86,10 @@ model Account {
   currentBalance  Decimal?       @db.Decimal(14, 2)
 
   transactions    Transaction[]
+
+    // ✅ ADD THESE (non-breaking)
+  entries         Entry[]
+  loanEntries     Entry[] @relation("EntryLoanLink")
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -71,6 +117,9 @@ model Category {
   parentId  String?
   parent    Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children  Category[] @relation("CategoryHierarchy")
+
+    // ✅ ADD THIS
+  entries   Entry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

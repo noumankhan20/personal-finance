@@ -1,9 +1,12 @@
 import dotenv from 'dotenv'
+import path from 'path'
 import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from "@prisma/client";
 
-dotenv.config()
+dotenv.config({
+  path: path.resolve(__dirname, '../../../.env'),
+})
 
 if (!process.env.DATABASE_URL) {
   throw new Error('Missing required environment variable: DATABASE_URL')
