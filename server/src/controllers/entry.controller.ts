@@ -44,6 +44,7 @@ export const createEntry = async (req: Request, res: Response) => {
 
     const numericAmount = Math.abs(Number(amount))
     const balanceDelta = getBalanceDelta(entryType, numericAmount)
+    console.log(categoryId)
 
     const [entry] = await prisma.$transaction([
       prisma.entry.create({

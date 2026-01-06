@@ -221,11 +221,10 @@ export default function Accounts() {
       <div className="flex gap-2 flex-wrap">
         <button
           onClick={() => setFilterType("all")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            filterType === "all"
-              ? "bg-gray-900 text-white"
-              : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-          }`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filterType === "all"
+            ? "bg-gray-900 text-white"
+            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+            }`}
         >
           All
         </button>
@@ -233,11 +232,10 @@ export default function Accounts() {
           <button
             key={type.value}
             onClick={() => setFilterType(type.value)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filterType === type.value
-                ? "bg-gray-900 text-white"
-                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-            }`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filterType === type.value
+              ? "bg-gray-900 text-white"
+              : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+              }`}
           >
             {type.label}
           </button>
@@ -315,9 +313,8 @@ export default function Accounts() {
                       <div className="mt-4 pt-3 border-t border-gray-100">
                         <p className="text-xs text-gray-500">Current Balance</p>
                         <p
-                          className={`font-mono text-lg font-medium ${
-                            account.currentBalance >= 0 ? "text-emerald-600" : "text-rose-600"
-                          }`}
+                          className={`font-mono text-lg font-medium ${account.currentBalance >= 0 ? "text-emerald-600" : "text-rose-600"
+                            }`}
                         >
                           {formatCurrency(account.currentBalance)}
                         </p>
@@ -344,8 +341,15 @@ export default function Accounts() {
       )}
 
       {showDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 text-black">
-          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center
+               bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => setShowDialog(false)}   // 👈 click outside closes modal
+        >
+          <div
+            className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()} // 👈 prevent closing on modal click
+          >
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-xl font-bold">{editingAccount ? "Edit Account" : "New Account"}</h2>
               <button
@@ -453,15 +457,14 @@ export default function Accounts() {
       )}
 
       {showAccountSheet && selectedAccount && (
-       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 text-black">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 text-black">
           <div className="bg-white w-full sm:max-w-xl h-full sm:h-auto sm:rounded-l-lg overflow-hidden flex flex-col">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <div className="flex-1">
                 <h2 className="text-xl font-bold">{selectedAccount.accountname}</h2>
                 <p
-                  className={`font-mono text-lg mt-1 ${
-                    selectedAccount.currentBalance >= 0 ? "text-emerald-600" : "text-rose-600"
-                  }`}
+                  className={`font-mono text-lg mt-1 ${selectedAccount.currentBalance >= 0 ? "text-emerald-600" : "text-rose-600"
+                    }`}
                 >
                   {formatCurrency(selectedAccount.currentBalance)}
                 </p>
@@ -491,9 +494,8 @@ export default function Accounts() {
                         <p className="text-xs text-gray-500 font-mono">{txn.date}</p>
                       </div>
                       <p
-                        className={`font-mono text-sm font-medium ${
-                          txn.transaction_type === "income" ? "text-emerald-600" : "text-rose-600"
-                        }`}
+                        className={`font-mono text-sm font-medium ${txn.transaction_type === "income" ? "text-emerald-600" : "text-rose-600"
+                          }`}
                       >
                         {txn.transaction_type === "income" ? "+" : "-"}
                         {formatCurrency(txn.amount)}
