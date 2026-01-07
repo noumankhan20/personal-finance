@@ -162,8 +162,12 @@ const getLoanRepayments = async (req: Request, res: Response) => {
       where: { loanId },
       orderBy: { date: "asc" },
     });
+    const formatted = repayments.map((r) => ({
+      ...r,
+      amount: Number(r.amount),
+    }));
 
-    return res.json(repayments);
+    return res.json(formatted);
   } catch (error) {
     console.error("getLoanRepayments:", error);
     return res.status(500).json({ message: "Failed to fetch repayments" });

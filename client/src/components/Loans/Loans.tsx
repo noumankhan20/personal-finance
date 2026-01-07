@@ -6,13 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -121,6 +114,8 @@ export default function Loans() {
   const [createLoan] = useCreateLoanMutation();
   const [updateLoan] = useUpdateLoanMutation();
   const [deleteLoan] = useDeleteLoanMutation();
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [historyLoan, setHistoryLoan] = useState<Loan | null>(null);
 
   const [showDialog, setShowDialog] = useState(false);
   const [showRepaymentDialog, setShowRepaymentDialog] = useState(false);
@@ -147,6 +142,14 @@ export default function Loans() {
     notes: "",
   });
 
+  const {
+    data: repayments = [],
+    isLoading: repaymentsLoading,
+  } = useGetLoanRepaymentsQuery(historyLoan?.id!, {
+    skip: !historyLoan,
+  });
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -164,26 +167,26 @@ export default function Loans() {
   };
 
   const handleRepayment = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!selectedLoan) return;
+    e.preventDefault();
+    if (!selectedLoan) return;
 
-  try {
-    await createLoanRepayment({
-      loanId: selectedLoan.id,
-      amount: repaymentData.amount,
-      repaymentType: repaymentData.is_interest
-        ? "INTEREST"
-        : "PRINCIPAL",
-      date: repaymentData.date,
-      notes: repaymentData.notes,
-    }).unwrap();
+    try {
+      await createLoanRepayment({
+        loanId: selectedLoan.id,
+        amount: repaymentData.amount,
+        repaymentType: repaymentData.is_interest
+          ? "INTEREST"
+          : "PRINCIPAL",
+        date: repaymentData.date,
+        notes: repaymentData.notes,
+      }).unwrap();
 
-    setShowRepaymentDialog(false);
-    setSelectedLoan(null);
-  } catch (err) {
-    console.error("Failed to record repayment:", err);
-  }
-};
+      setShowRepaymentDialog(false);
+      setSelectedLoan(null);
+    } catch (err) {
+      console.error("Failed to record repayment:", err);
+    }
+  };
 
 
   const handleDelete = async (id: string) => {
@@ -370,6 +373,16 @@ export default function Loans() {
                     </div>
 
                     <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setHistoryLoan(loan);
+                          setShowHistoryDialog(true);
+                        }}
+                      >
+                        History
+                      </Button>
                       <Button variant="outline" size="sm" className="flex-1" onClick={() => {
                         setSelectedLoan(loan);
                         setRepaymentData({ amount: 0, date: formatDate(new Date()), is_interest: false, notes: "" });
@@ -395,86 +408,174 @@ export default function Loans() {
 
         {/* Create/Edit Loan Dialog */}
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
-          <DialogContent className="bg-white text-black overflow-visible">
-            <DialogHeader>
-              <DialogTitle>{editingLoan ? "Edit Loan" : "New Loan"}</DialogTitle>
+          <DialogContent className="bg-white text-black max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="space-y-3 pb-4">
+              <DialogTitle className="text-2xl font-semibold tracking-tight">
+                {editingLoan ? "Edit Loan Details" : "Create New Loan"}
+              </DialogTitle>
+              <p className="text-sm text-gray-500">
+                {editingLoan
+                  ? "Update the loan information below"
+                  : "Enter the details of your loan transaction"}
+              </p>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label>Person Name</Label>
-                <Input value={formData.personName} onChange={(e) => setFormData({ ...formData, personName: e.target.value })} className="mt-1" placeholder="Enter name" required />
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Person Name */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">
+                  Person Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  value={formData.personName}
+                  onChange={(e) => setFormData({ ...formData, personName: e.target.value })}
+                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                  placeholder="e.g., John Doe"
+                  required
+                />
               </div>
 
-              <div>
-                <Label>Loan Type</Label>
-                <Select value={formData.loanType} onValueChange={(val: "GIVEN" | "TAKEN") => setFormData({ ...formData, loanType: val })}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent
-                    position="popper"
-                    sideOffset={5}
-                    className="z-[100]"
-                  >
-                    <SelectItem value="GIVEN">Loan Given (You lent money)</SelectItem>
-                    <SelectItem value="TAKEN">Loan Taken (You borrowed money)</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Loan Type */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">
+                  Loan Type <span className="text-red-500">*</span>
+                </Label>
+                <select
+                  value={formData.loanType}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      loanType: e.target.value as "GIVEN" | "TAKEN",
+                    })
+                  }
+                  className="h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm
+             focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="GIVEN">Loan Given</option>
+                  <option value="TAKEN">Loan Taken</option>
+                </select>
+
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Principal Amount (₹)</Label>
-                  <Input type="number" step="0.01" value={formData.principal}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        principal: e.target.value === "" ? "" : Number(e.target.value),
-                      })
-                    }
-                    className="mt-1 font-mono" required />
+              {/* Principal and Interest Rate */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Principal Amount <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                      ₹
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.principal}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          principal: e.target.value === "" ? "" : Number(e.target.value),
+                        })
+                      }
+                      className="h-11 pl-8 font-mono border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                      placeholder="10000.00"
+                      required
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label>Interest Rate (% p.a.)</Label>
-                  <Input type="number" step="0.01" value={formData.interestRate}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        interestRate: e.target.value === "" ? "" : Number(e.target.value),
-                      })
-                    }
-                    className="mt-1 font-mono" />
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Interest Rate (% per annum)
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.interestRate}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          interestRate: e.target.value === "" ? "" : Number(e.target.value),
+                        })
+                      }
+                      className="h-11 pr-8 font-mono border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                      placeholder="5.00"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                      %
+                    </span>
+                  </div>
                 </div>
               </div>
 
+              {/* Interest Type - Conditional */}
               {formData.interestRate > 0 && (
-                <div>
-                  <Label>Interest Type</Label>
-                  <Select value={formData.interestType} onValueChange={(val: "SIMPLE" | "COMPOUND") => setFormData({ ...formData, interestType: val })}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent
-                      position="popper"
-                      sideOffset={5}
-                      className="z-[100]"
-                    >
-                      <SelectItem value="SIMPLE">Simple Interest</SelectItem>
-                      <SelectItem value="COMPOUND">Compound Interest (Monthly)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Interest Type <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    value={formData.interestType}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        interestType: e.target.value as "SIMPLE" | "COMPOUND",
+                      })
+                    }
+                    className="h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm
+             focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="SIMPLE">Simple Interest</option>
+                    <option value="COMPOUND">Compound Interest (Monthly)</option>
+                  </select>
+
                 </div>
               )}
 
-              <div>
-                <Label>Start Date</Label>
-                <Input type="date" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} className="mt-1" />
+              {/* Start Date */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">
+                  Start Date
+                </Label>
+                <Input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                />
               </div>
 
-              <div>
-                <Label>Notes (Optional)</Label>
-                <Textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="mt-1 h-20" placeholder="Any additional notes" />
+              {/* Notes */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">
+                  Additional Notes
+                  <span className="text-xs text-gray-400 font-normal ml-2">(Optional)</span>
+                </Label>
+                <Textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="min-h-[100px] resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                  placeholder="Add any additional information about this loan..."
+                />
               </div>
 
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-                <Button type="submit">{editingLoan ? "Update" : "Create Loan"}</Button>
+              {/* Action Buttons */}
+              <DialogFooter className="gap-3 pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowDialog(false)}
+                  className="h-11 px-6 border-gray-300 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="h-11 px-6 bg-blue-600 hover:bg-blue-700 transition-colors"
+                >
+                  {editingLoan ? "Update Loan" : "Create Loan"}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -497,13 +598,20 @@ export default function Loans() {
               </div>
               <div>
                 <Label>Payment Type</Label>
-                <Select value={repaymentData.is_interest ? "interest" : "principal"} onValueChange={(val) => setRepaymentData({ ...repaymentData, is_interest: val === "interest" })}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="principal">Principal Repayment</SelectItem>
-                    <SelectItem value="interest">Interest Payment</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select
+                  value={repaymentData.is_interest ? "interest" : "principal"}
+                  onChange={(e) =>
+                    setRepaymentData({
+                      ...repaymentData,
+                      is_interest: e.target.value === "interest",
+                    })
+                  }
+                  className="mt-1 h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm
+             focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="principal">Principal Repayment</option>
+                  <option value="interest">Interest Payment</option>
+                </select>
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setShowRepaymentDialog(false)}>Cancel</Button>
@@ -575,6 +683,53 @@ export default function Loans() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+          <DialogContent className="bg-white text-black max-w-lg">
+            <DialogHeader>
+              <DialogTitle>
+                Repayment History – {historyLoan?.personName}
+              </DialogTitle>
+            </DialogHeader>
+
+            {repaymentsLoading ? (
+              <p className="text-sm text-gray-500">Loading...</p>
+            ) : repayments.length === 0 ? (
+              <p className="text-sm text-gray-500">No repayments yet</p>
+            ) : (
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                {repayments.map((r) => (
+                  <div
+                    key={r.id}
+                    className="flex justify-between items-center border rounded-md p-3"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">
+                        {r.repaymentType === "PRINCIPAL"
+                          ? "Principal Payment"
+                          : "Interest Payment"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(r.date).toLocaleDateString()}
+                      </p>
+                    </div>
+
+                    <span className="font-mono">
+                      {formatCurrency(Number(r.amount))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button onClick={() => setShowHistoryDialog(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </div>
   );
