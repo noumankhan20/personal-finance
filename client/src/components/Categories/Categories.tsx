@@ -16,7 +16,7 @@ import {
   Category,
   CategoryType,
 } from "@/redux/slices/categoriesSlice";
-
+import { useRouter } from "next/navigation";
 interface FormData {
   name: string;
   parentId: string;
@@ -29,7 +29,8 @@ export default function Categories() {
   const [formData, setFormData] = useState<FormData>({
     name: "",
     parentId: "",
-  });
+  }); 
+  const router= useRouter();
 
   // RTK Query hooks
   const { data: categoriesData, isLoading, isFetching } = useGetCategoriesQuery(activeTab);
@@ -39,7 +40,7 @@ export default function Categories() {
 
   // API already returns tree structure, so just use it directly
   const categories = categoriesData || [];
-  
+
   // Get parent categories for the dropdown (only top-level categories)
   const parentCategories = categories.filter((c) => !c.parentId);
 
@@ -114,8 +115,17 @@ export default function Categories() {
   return (
     <div className="space-y-6 bg-gray-50 min-h-screen p-6" data-testid="categories-page">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
+          <button
+            onClick={() => router.push("/settings")}
+            className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+            aria-label="Back to settings"
+          >
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
           <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
           <p className="text-gray-500 text-sm mt-1">Organize your income and expenses</p>
         </div>
@@ -280,9 +290,8 @@ function CategoryList({ categories, type, onEdit, onDelete, isDeleting }: Catego
           <div className="p-4 flex items-center justify-between group hover:bg-gray-50 transition-colors">
             <div className="flex items-center gap-3">
               <div
-                className={`w-10 h-10 rounded-md flex items-center justify-center ${
-                  type === "expense" ? "bg-rose-50" : "bg-emerald-50"
-                }`}
+                className={`w-10 h-10 rounded-md flex items-center justify-center ${type === "expense" ? "bg-rose-50" : "bg-emerald-50"
+                  }`}
               >
                 <Folder
                   size={20}

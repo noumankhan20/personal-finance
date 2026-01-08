@@ -218,10 +218,12 @@ export default function AddEntry() {
       <div className="mb-6 flex items-start gap-4">
         <button
           onClick={() => router.push("/transactions")}
-          className="mt-1 flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+          className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+          aria-label="Back to settings"
         >
-          <ArrowLeft size={16} />
-          Back
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
         </button>
 
         <div>

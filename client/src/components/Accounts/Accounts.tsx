@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   useGetAccountsQuery,
   useCreateAccountMutation,
@@ -72,6 +73,7 @@ const getAccountIcon = (type: string) => {
 };
 
 export default function Accounts() {
+  const router = useRouter();
   const { data: accountsData, isLoading, error } = useGetAccountsQuery();
   const [createAccount] = useCreateAccountMutation();
   const [updateAccount] = useUpdateAccountMutation();
@@ -187,24 +189,35 @@ export default function Accounts() {
 
   return (
     <div className="space-y-6 p-4 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Accounts</h1>
-          <p className="text-gray-500 text-sm mt-1">Manage your bank accounts, cash, and other assets</p>
-        </div>
+      <div className="flex items-center gap-4">
         <button
-          onClick={() => {
-            resetForm();
-            setEditingAccount(null);
-            setShowDialog(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+          onClick={() => router.push("/settings")}
+          className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+          aria-label="Back to settings"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          New Account
         </button>
+        <div className="flex-1 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Accounts</h1>
+            <p className="text-gray-500 text-sm mt-1">Manage your bank accounts, cash, and other assets</p>
+          </div>
+          <button
+            onClick={() => {
+              resetForm();
+              setEditingAccount(null);
+              setShowDialog(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Account
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -344,11 +357,11 @@ export default function Accounts() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center
                bg-black/40 backdrop-blur-sm p-4"
-          onClick={() => setShowDialog(false)}   // 👈 click outside closes modal
+          onClick={() => setShowDialog(false)}
         >
           <div
             className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()} // 👈 prevent closing on modal click
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-xl font-bold">{editingAccount ? "Edit Account" : "New Account"}</h2>
