@@ -329,6 +329,7 @@ export default function Transactions() {
 
           <div className="flex items-center gap-3">
             <Button
+              variant="outline"
               size="sm"
               onClick={() => router.push("/transactions/add-entry")}
             >
@@ -556,10 +557,10 @@ export default function Transactions() {
                       </td>
                       <td
                         className={`font-mono text-sm text-right font-medium p-3 ${txn.entryType === "income"
-                            ? "text-emerald-600"
-                            : txn.entryType === "transfer"
-                              ? "text-blue-600"
-                              : "text-rose-600"
+                          ? "text-emerald-600"
+                          : txn.entryType === "transfer"
+                            ? "text-blue-600"
+                            : "text-rose-600"
                           }`}
                       >
                         {txn.entryType === "income"
