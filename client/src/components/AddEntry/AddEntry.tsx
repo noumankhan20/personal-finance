@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useGetAccountsQuery } from "../../redux/slices/accountsSlice";
 import { useGetCategoriesQuery, useCreateCategoryMutation } from "../../redux/slices/categoriesSlice";
 import { useCreateEntryMutation, useCreateTransferMutation } from "../../redux/slices/entrySlice";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 // Types
 interface EntryData {
@@ -47,7 +49,7 @@ export default function AddEntry() {
   const { data: accounts = [], isLoading: accountsLoading } = useGetAccountsQuery();
   const { data: expenseCategories = [], isLoading: expenseCategoriesLoading } = useGetCategoriesQuery("expense");
   const { data: incomeCategories = [], isLoading: incomeCategoriesLoading } = useGetCategoriesQuery("income");
-  
+  const router = useRouter();
   const [createEntry, { isLoading: creatingEntry }] = useCreateEntryMutation();
   const [createTransfer, { isLoading: creatingTransfer }] = useCreateTransferMutation();
   const [createCategory, { isLoading: creatingCategory }] = useCreateCategoryMutation();
@@ -213,21 +215,33 @@ export default function AddEntry() {
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Add Entry</h1>
-        <p className="text-gray-500 text-sm mt-1">Record income, expenses, or transfers</p>
+      <div className="mb-6 flex items-start gap-4">
+        <button
+          onClick={() => router.push("/transactions")}
+          className="mt-1 flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
+
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Add Entry</h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Record income, expenses, or transfers
+          </p>
+        </div>
       </div>
+
 
       {/* Tabs */}
       <div className="mb-6">
         <div className="grid grid-cols-3 gap-2 bg-gray-100 p-1 rounded-lg">
           <button
             onClick={() => setActiveTab("expense")}
-            className={`flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-colors ${
-              activeTab === "expense"
+            className={`flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-colors ${activeTab === "expense"
                 ? "bg-white text-gray-900 shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
-            }`}
+              }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
@@ -236,11 +250,10 @@ export default function AddEntry() {
           </button>
           <button
             onClick={() => setActiveTab("income")}
-            className={`flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-colors ${
-              activeTab === "income"
+            className={`flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-colors ${activeTab === "income"
                 ? "bg-white text-gray-900 shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
-            }`}
+              }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -249,11 +262,10 @@ export default function AddEntry() {
           </button>
           <button
             onClick={() => setActiveTab("transfer")}
-            className={`flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-colors ${
-              activeTab === "transfer"
+            className={`flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-colors ${activeTab === "transfer"
                 ? "bg-white text-gray-900 shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
-            }`}
+              }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
@@ -379,16 +391,14 @@ export default function AddEntry() {
 
           {isInterestCategory && loanAccounts.length > 0 && (
             <div
-              className={`p-3 rounded-lg border ${
-                activeTab === "income"
+              className={`p-3 rounded-lg border ${activeTab === "income"
                   ? "bg-emerald-50 border-emerald-200"
                   : "bg-amber-50 border-amber-200"
-              }`}
+                }`}
             >
               <label
-                className={`flex items-center gap-2 text-sm font-medium mb-1 ${
-                  activeTab === "income" ? "text-emerald-800" : "text-amber-800"
-                }`}
+                className={`flex items-center gap-2 text-sm font-medium mb-1 ${activeTab === "income" ? "text-emerald-800" : "text-amber-800"
+                  }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -409,9 +419,8 @@ export default function AddEntry() {
                 ))}
               </select>
               <p
-                className={`text-xs mt-1 ${
-                  activeTab === "income" ? "text-emerald-700" : "text-amber-700"
-                }`}
+                className={`text-xs mt-1 ${activeTab === "income" ? "text-emerald-700" : "text-amber-700"
+                  }`}
               >
                 Track which loan this interest payment {activeTab === "income" ? "is from" : "belongs to"}
               </p>

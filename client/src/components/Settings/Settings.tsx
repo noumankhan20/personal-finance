@@ -12,8 +12,8 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Key, Download, Trash2, AlertTriangle } from "lucide-react";
-
+import { Key, Download, Trash2, AlertTriangle, PlusCircle, Wallet } from "lucide-react";
+import { useRouter } from "next/navigation";
 export default function Settings() {
   const [loading, setLoading] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -21,7 +21,7 @@ export default function Settings() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState("");
-
+  const router= useRouter();
   const handleChangePassword = async (e: FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -116,9 +116,9 @@ export default function Settings() {
                 data-testid="confirm-new-password-input"
               />
             </div>
-            <Button 
-              type="submit" 
-              disabled={loading} 
+            <Button
+              type="submit"
+              disabled={loading}
               data-testid="change-password-btn"
               className="bg-gray-900 hover:bg-gray-800 text-white"
             >
@@ -159,6 +159,47 @@ export default function Settings() {
             </Button>
           </div>
         </div>
+
+        {/* Manage Data */}
+        <div
+          className="bg-white rounded-lg border border-gray-200 p-6"
+          data-testid="manage-data-section"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-md bg-indigo-50 flex items-center justify-center">
+              <PlusCircle size={20} className="text-indigo-600" strokeWidth={1.5} />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900">Manage Data</h2>
+              <p className="text-sm text-gray-500">
+                Create categories and accounts
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              className="border-gray-300 text-gray-900 bg-white hover:bg-gray-50"
+              data-testid="add-category-btn"
+              onClick={() => router.push("/settings/categories")}
+            >
+              <PlusCircle size={16} className="mr-2" />
+              Manage Categories
+            </Button>
+
+            <Button
+              variant="outline"
+              className="border-gray-300 text-gray-900 bg-white hover:bg-gray-50"
+              data-testid="add-account-btn"
+              onClick={() => router.push("/settings/accounts")}
+            >
+              <Wallet size={16} className="mr-2" />
+              Manage Accounts
+            </Button>
+          </div>
+        </div>
+
 
         {/* Reset All Data */}
         <div

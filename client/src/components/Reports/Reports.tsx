@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar as CalendarIcon, Download, TrendingUp, TrendingDown, PieChart, BarChart3 } from "lucide-react";
 import { PieChart as RePieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { PieLabelRenderProps } from "recharts";
-
+import Loans from "@/components/Loans/Loans";
 const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat("en-IN", {
         style: "currency",
@@ -188,6 +188,7 @@ export default function Reports() {
                     <TabsList>
                         <TabsTrigger value="balance-sheet">Balance Sheet</TabsTrigger>
                         <TabsTrigger value="income-expense">Income & Expense</TabsTrigger>
+                        <TabsTrigger value="loans">Loans</TabsTrigger>
                     </TabsList>
 
                     {/* Balance Sheet Tab */}
@@ -360,7 +361,7 @@ export default function Reports() {
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
-                                           <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                                            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                                         </RePieChart>
                                     </ResponsiveContainer>
                                 ) : (
@@ -428,6 +429,11 @@ export default function Reports() {
                             </ResponsiveContainer>
                         </div>
                     </TabsContent>
+
+                    <TabsContent value="loans" className="space-y-6">
+                        <Loans />
+                    </TabsContent>
+
                 </Tabs>
             </div>
         </div>

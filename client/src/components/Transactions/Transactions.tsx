@@ -9,6 +9,7 @@ import {
   Edit2,
   Search,
   ArrowRightLeft,
+  Plus,
 } from "lucide-react";
 import {
   useGetEntriesQuery,
@@ -17,6 +18,7 @@ import {
   Entry as BaseEntry,
 } from "../../redux/slices/entrySlice";
 import { Entry } from "../../redux/slices/entrySlice";
+import { useRouter } from "next/navigation";
 // Extended Entry type with included relations from backend
 
 type ButtonVariant = "default" | "outline" | "ghost";
@@ -137,7 +139,7 @@ export default function Transactions() {
     category_id: "",
     notes: "",
   });
-
+  const router = useRouter();
   // API Hooks
   const { data: entries = [], isLoading, isError } = useGetEntriesQuery();
   const [updateEntry] = useUpdateEntryMutation();
@@ -324,11 +326,23 @@ export default function Transactions() {
               View and manage all transactions
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download size={16} className="mr-2" />
-            Export Excel
-          </Button>
+
+          <div className="flex items-center gap-3">
+            <Button
+              size="sm"
+              onClick={() => router.push("/transactions/add-entry")}
+            >
+              <Plus size={16} className="mr-2" />
+              Add Entry
+            </Button>
+
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download size={16} className="mr-2" />
+              Export Excel
+            </Button>
+          </div>
         </div>
+
 
         {/* Search & Filters */}
         <div className="bg-white rounded-lg shadow-sm p-4">
@@ -522,9 +536,8 @@ export default function Transactions() {
                   {filteredTransactions.map((txn) => (
                     <tr
                       key={txn.id}
-                      className={`border-b border-gray-100 hover:bg-gray-50 ${
-                        selectedIds.includes(txn.id) ? "bg-blue-50" : ""
-                      }`}
+                      className={`border-b border-gray-100 hover:bg-gray-50 ${selectedIds.includes(txn.id) ? "bg-blue-50" : ""
+                        }`}
                     >
                       <td className="p-3">
                         <Checkbox
@@ -542,19 +555,18 @@ export default function Transactions() {
                         {txn.description}
                       </td>
                       <td
-                        className={`font-mono text-sm text-right font-medium p-3 ${
-                          txn.entryType === "income"
+                        className={`font-mono text-sm text-right font-medium p-3 ${txn.entryType === "income"
                             ? "text-emerald-600"
                             : txn.entryType === "transfer"
-                            ? "text-blue-600"
-                            : "text-rose-600"
-                        }`}
+                              ? "text-blue-600"
+                              : "text-rose-600"
+                          }`}
                       >
                         {txn.entryType === "income"
                           ? "+"
                           : txn.entryType === "transfer"
-                          ? "↔"
-                          : "-"}
+                            ? "↔"
+                            : "-"}
                         {formatCurrency(Number(txn.amount))}
                       </td>
                       <td className="text-sm text-gray-600 p-3">
