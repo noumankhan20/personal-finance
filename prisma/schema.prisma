@@ -95,6 +95,7 @@ model Account {
   updatedAt       DateTime      @updatedAt
 }
 
+
 model Transaction {
   id              String           @id @default(uuid())
   accountId       String

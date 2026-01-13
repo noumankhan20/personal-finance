@@ -30,7 +30,7 @@ export const categoriesApiSlice = apiSlice.injectEndpoints({
        GET CATEGORIES
        GET /api/categories/get?type=expense|income
     ---------------------------------------------------- */
-    getCategories: builder.query<Category[], CategoryType>({
+    getCategories: builder.query<Category[], CategoryType | void>({
       query: (type) => ({
         url: `/categories/get`,
         params: { type },
